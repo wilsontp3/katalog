@@ -1,38 +1,307 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-  <meta charset="UTF-8">
+  <base target="_top">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Katalog Wilson TP3</title>
-  <!-- Ganti URL pada href jika ingin menambahkan ikon tab (Favicon) -->
-  <link rel="icon" type="image/png" href="">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #ffffff;
-    }
-    iframe {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
+  <title>Katalog Wilson Tunjungan Plaza</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style> 
+    body, html { font-family: 'Poppins', sans-serif; height: 100%; margin: 0; overflow: hidden; width: 100%; position: fixed; } 
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body>
-  <iframe 
-    src="https://script.google.com/macros/s/AKfycbwEWbCFy92lDTFnwGcJ3yf3TikrNwjy1Wl4552Lupoc9XIy1Tzk0ghoGo3wkcfx1FStVg/exec" 
-    allow="camera; microphone; geolocation; clipboard-read; clipboard-write"
-    allowfullscreen>
-  </iframe>
+<body class="bg-slate-50 flex flex-col h-full w-full overflow-hidden">
+
+  <!-- Header -->
+  <header class="bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-md py-2.5 px-4 sm:py-3.5 sm:px-6 flex justify-between items-center shrink-0 z-30">
+    <div class="flex items-center gap-3 overflow-hidden">
+      <div class="bg-white px-2 py-1.5 rounded-lg shadow-sm flex items-center justify-center shrink-0 h-9 sm:h-10">
+        <img src="https://1000logos.net/wp-content/uploads/2020/09/Wilson-Logo.png" alt="Wilson Logo" class="h-full object-contain">
+      </div>
+      <h1 class="text-xs sm:text-xl font-bold tracking-wide truncate text-white drop-shadow-xs">Tunjungan Plaza</h1>
+    </div>
+    
+    <div class="flex items-center gap-3 shrink-0">
+      <span class="text-xs sm:text-sm bg-white/20 px-3 py-1 rounded-full font-medium hidden sm:inline-block">Live Catalog</span>
+      <button onclick="toggleCartModal(true)" class="relative bg-white/10 hover:bg-white/20 px-3.5 py-2 rounded-xl hidden md:flex items-center gap-2 transition cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+        <span class="text-sm font-semibold">Keranjang</span>
+        <span id="cartBadge" class="absolute -top-1.5 -right-1.5 bg-yellow-400 text-slate-900 text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md hidden">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Container Utama -->
+  <div class="flex flex-1 overflow-hidden h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] w-full relative">
+    
+    <!-- Sidebar Kiri -->
+    <aside class="w-64 bg-white shadow-md p-4 sm:p-5 flex flex-col justify-between hidden md:flex shrink-0 h-full border-r border-gray-100 overflow-y-auto">
+      <div class="flex flex-col gap-1.5">
+        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Kategori Produk</h2>
+        <div id="categoryList" class="flex flex-col gap-1.5 pb-4"></div>
+      </div>
+    </aside>
+
+    <!-- Konten Kanan -->
+    <main id="mainContainer" class="flex-1 p-3 sm:p-6 overflow-y-auto h-full flex flex-col w-full">
+      <div class="md:hidden flex items-center gap-2 overflow-x-auto pb-3 mb-2 shrink-0 no-scrollbar" id="categoryListMobile"></div>
+
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2 shrink-0">
+        <h2 id="currentCategoryTitle" class="text-sm sm:text-xl font-bold text-gray-800">Semua Produk</h2>
+        <input type="text" id="searchInput" placeholder="Cari nama produk, size, atau scan EAN..." 
+          class="px-3.5 py-2 border rounded-full text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-red-400 w-full sm:w-80 bg-white shadow-xs"
+          oninput="filterProducts()">
+      </div>
+
+      <!-- Kotak Sub-Filter Gender Apparel -->
+      <div id="apparelSubFilterContainer" class="hidden flex items-center gap-2 mb-4 pb-2 border-b border-gray-200 shrink-0">
+        <span class="text-xs font-bold text-gray-500 uppercase tracking-wide mr-1">Filter Apparel:</span>
+        <button onclick="setApparelGender('ALL')" id="subFilterAll" class="px-3 py-1 rounded-lg text-xs font-semibold bg-red-600 text-white shadow-xs transition cursor-pointer">Semua Apparel</button>
+        <button onclick="setApparelGender('Men')" id="subFilterMen" class="px-3 py-1 rounded-lg text-xs font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 transition cursor-pointer">Men (M)</button>
+        <button onclick="setApparelGender('Women')" id="subFilterWomen" class="px-3 py-1 rounded-lg text-xs font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 transition cursor-pointer">Women (W)</button>
+      </div>
+
+      <div id="loading" class="text-center py-24 text-gray-500 font-medium flex flex-col items-center justify-center gap-3 flex-1">
+        <div class="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+        <span>Memuat data katalog produk...</span>
+      </div>
+
+      <div id="errorBox" class="hidden text-center py-16 text-red-500 font-medium flex-1"></div>
+
+      <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-6 pb-24"></div>
+    </main>
+  </div>
+
+  <script>
+    let allProducts = [];
+    let filteredProducts = [];
+    let selectedCategory = 'ALL';
+    let apparelSubGender = 'ALL';
+    let cart = []; 
+    let activeSelectedVariant = null; 
+    let activeCardId = null;        
+    
+    const defaultImage = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS-QTuhDojs1Ey4Nw39TSYbXRvdMP4uHcDm55Vd5Dl1rw&s=10';
+    const STORE_WHATSAPP_NUMBER = "6285111450018";
+
+    window.onload = function() {
+      // Ganti URL di bawah ini dengan URL Web App Apps Script Anda yang berakhiran /exec
+      const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbziIvrnqyNYSz8Dvryb5rz2xT0Uy7JjsHCwHLUmdLs3tdh5R5__6PNYG0S1kKSWQnEm/exec"; 
+
+      fetch(WEB_APP_URL)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('loading').style.display = 'none';
+          if (!data || data.length === 0) {
+            document.getElementById('errorBox').innerText = 'Tidak ada data produk ditemukan.';
+            document.getElementById('errorBox').classList.remove('hidden');
+            return;
+          }
+          allProducts = data;
+          renderCategories();
+          filterProducts();
+        })
+        .catch(err => {
+          document.getElementById('loading').style.display = 'none';
+          let errBox = document.getElementById('errorBox');
+          errBox.innerHTML = 'Gagal memuat data: ' + err.message;
+          errBox.classList.remove('hidden');
+        });
+    };
+
+    function renderCategories() {
+      const categoriesSet = new Set();
+      let hasWeekendSale = false;
+
+      allProducts.forEach(p => { 
+        if(p.category) categoriesSet.add(p.category);
+        if(p.discWeekly > 0 && p.discWeekly < p.price) hasWeekendSale = true;
+      });
+
+      const container = document.getElementById('categoryList');
+      let html = '<button onclick="selectCategory(\'ALL\')" class="text-left px-3 py-2 rounded-lg text-sm font-semibold transition cat-btn active bg-red-500 text-white shadow-xs" data-cat="ALL">Semua Kategori</button>';
+      
+      if (hasWeekendSale) {
+        html += '<button onclick="selectCategory(\'WEEKEND_SALE\')" class="text-left px-3 py-2 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition cat-btn" data-cat="WEEKEND_SALE">⚡ WEEKEND SALE</button>';
+      }
+      
+      html += '<button onclick="selectCategory(\'DISKON\')" class="text-left px-3 py-2 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition cat-btn" data-cat="DISKON">🔥 SALE</button>';
+
+      categoriesSet.forEach(cat => {
+        html += '<button onclick="selectCategory(\'' + cat + '\')" class="text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition cat-btn" data-cat="' + cat + '">' + cat + '</button>';
+      });
+      container.innerHTML = html;
+
+      const containerMobile = document.getElementById('categoryListMobile');
+      let htmlMobile = '<button onclick="selectCategory(\'ALL\')" class="whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition cat-btn-mobile active bg-red-500 text-white shadow-xs shrink-0" data-cat="ALL">Semua</button>';
+      
+      if (hasWeekendSale) {
+        htmlMobile += '<button onclick="selectCategory(\'WEEKEND_SALE\')" class="whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold text-red-600 bg-red-50 border border-red-200 transition cat-btn-mobile shrink-0" data-cat="WEEKEND_SALE">⚡ WEEKEND</button>';
+      }
+      
+      htmlMobile += '<button onclick="selectCategory(\'DISKON\')" class="whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold text-red-600 bg-red-50 border border-red-200 transition cat-btn-mobile shrink-0" data-cat="DISKON">🔥 SALE</button>';
+
+      categoriesSet.forEach(cat => {
+        htmlMobile += '<button onclick="selectCategory(\'' + cat + '\')" class="whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-red-50 hover:text-red-600 transition cat-btn-mobile shrink-0" data-cat="' + cat + '">' + cat + '</button>';
+      });
+      containerMobile.innerHTML = htmlMobile;
+    }
+
+    function selectCategory(cat) {
+      selectedCategory = cat;
+      apparelSubGender = 'ALL';
+
+      const subFilterContainer = document.getElementById('apparelSubFilterContainer');
+      if (cat.toUpperCase().includes('APPAREL')) {
+        subFilterContainer.classList.remove('hidden');
+        subFilterContainer.classList.add('flex');
+        updateSubFilterUI();
+      } else {
+        subFilterContainer.classList.remove('flex');
+        subFilterContainer.classList.add('hidden');
+      }
+
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        if(btn.getAttribute('data-cat') === cat) {
+          btn.className = "text-left px-3 py-2 rounded-lg text-sm font-semibold transition cat-btn active bg-red-500 text-white shadow-xs";
+        } else {
+          btn.className = "text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition cat-btn";
+        }
+      });
+
+      let titleText = 'Semua Produk';
+      if (cat === 'WEEKEND_SALE') titleText = 'Weekend Sale';
+      else if (cat === 'DISKON') titleText = 'Produk Sale';
+      else if (cat !== 'ALL') titleText = cat;
+
+      document.getElementById('currentCategoryTitle').innerText = titleText;
+      document.getElementById('mainContainer').scrollTo({ top: 0, behavior: 'smooth' });
+      
+      activeSelectedVariant = null;
+      activeCardId = null;
+      filterProducts();
+    }
+
+    function setApparelGender(gender) {
+      apparelSubGender = gender;
+      updateSubFilterUI();
+      filterProducts();
+    }
+
+    function updateSubFilterUI() {
+      ['All', 'Men', 'Women'].forEach(g => {
+        let btn = document.getElementById('subFilter' + g);
+        if (!btn) return;
+        if (apparelSubGender === g || (g === 'All' && apparelSubGender === 'ALL')) {
+          btn.className = "px-3 py-1 rounded-lg text-xs font-semibold bg-red-600 text-white shadow-xs transition cursor-pointer";
+        } else {
+          btn.className = "px-3 py-1 rounded-lg text-xs font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 transition cursor-pointer";
+        }
+      });
+    }
+
+    function filterProducts() {
+      const searchInput = document.getElementById('searchInput');
+      const keyword = searchInput ? searchInput.value.toLowerCase().replace(/\s+/g, '') : '';
+      
+      filteredProducts = allProducts.filter(p => {
+        let matchesCategory = false;
+        let upperCat = p.category.toUpperCase();
+
+        if (selectedCategory === 'ALL') {
+          matchesCategory = true;
+        } else if (selectedCategory === 'WEEKEND_SALE') {
+          matchesCategory = (p.discWeekly > 0 && p.discWeekly < p.price);
+        } else if (selectedCategory === 'DISKON') {
+          matchesCategory = (p.priceDiscount > 0 && p.priceDiscount < p.price);
+        } else {
+          matchesCategory = (upperCat === selectedCategory.toUpperCase());
+        }
+
+        if (matchesCategory && upperCat.includes('APPAREL') && selectedCategory.toUpperCase().includes('APPAREL')) {
+          if (apparelSubGender !== 'ALL') {
+            if (p.apparelGender !== apparelSubGender) {
+              matchesCategory = false;
+            }
+          }
+        }
+
+        const titleClean = p.title.toLowerCase().replace(/\s+/g, '');
+        const matchesKeyword = titleClean.includes(keyword) || 
+          p.variants.some(v => {
+            if (v.stock <= 0) return false;
+            const sizeClean = v.size.toLowerCase().replace(/\s+/g, '');
+            const descClean = v.description.toLowerCase().replace(/\s+/g, '');
+            const eanClean = v.ean.toLowerCase().replace(/\s+/g, '');
+            return sizeClean.includes(keyword) || descClean.includes(keyword) || eanClean.includes(keyword);
+          });
+        return matchesCategory && matchesKeyword;
+      });
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('productGrid');
+      if (filteredProducts.length === 0) {
+        grid.innerHTML = '<div class="col-span-full text-center py-16 text-gray-400 text-xs sm:text-sm">Tidak ada produk yang cocok.</div>';
+        return;
+      }
+
+      let html = '';
+      filteredProducts.forEach((p, index) => {
+        let priceFormatted = Number(p.price).toLocaleString('id-ID');
+        let imgSrc = (p.image && p.image.startsWith('http')) ? p.image : defaultImage;
+
+        let hasWeekendDiscount = (p.discWeekly > 0 && p.discWeekly < p.price);
+        let hasRegularDiscount = (p.priceDiscount > 0 && p.priceDiscount < p.price);
+        
+        let activeDiscountPrice = 0;
+        if (selectedCategory === 'WEEKEND_SALE' && hasWeekendDiscount) {
+          activeDiscountPrice = p.discWeekly;
+        } else if (selectedCategory === 'DISKON' && hasRegularDiscount) {
+          activeDiscountPrice = p.priceDiscount;
+        } else {
+          if (hasWeekendDiscount) activeDiscountPrice = p.discWeekly;
+          else if (hasRegularDiscount) activeDiscountPrice = p.priceDiscount;
+        }
+
+        let activePrice = activeDiscountPrice > 0 ? activeDiscountPrice : p.price;
+        
+        let priceHtml = '';
+        if (activeDiscountPrice > 0) {
+          let discountFormatted = Number(activeDiscountPrice).toLocaleString('id-ID');
+          priceHtml = '<div class="flex flex-col"><span class="text-red-600 font-bold text-xs sm:text-base">Rp ' + discountFormatted + '</span><span class="text-gray-400 text-[10px] sm:text-xs line-through">Rp ' + priceFormatted + '</span></div>';
+        } else {
+          priceHtml = '<span class="text-gray-900 font-bold text-xs sm:text-base">Rp ' + priceFormatted + '</span>';
+        }
+
+        let upperCat = p.category.toUpperCase();
+        let genderBadge = '';
+        if (upperCat.includes('APPAREL') && p.apparelGender && p.apparelGender !== 'Unisex') {
+          genderBadge = '<span class="absolute top-2 right-2 bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">' + p.apparelGender + '</span>';
+        }
+
+        html += '<div class="bg-white rounded-xl shadow-xs border border-gray-100 flex flex-col overflow-hidden">';
+        html += '<div class="h-36 bg-gray-50 relative flex items-center justify-center p-3">';
+        html += '<img src="' + imgSrc + '" alt="' + p.title + '" class="object-contain h-full w-full" onerror="this.src=\'' + defaultImage + '\'">';
+        html += '<span class="absolute top-2 left-2 bg-white/90 text-gray-700 text-[9px] font-semibold px-2 py-0.5 rounded-full uppercase">' + p.category + '</span>';
+        html += genderBadge;
+        html += '</div>';
+        html += '<div class="p-3 flex flex-col flex-1 justify-between">';
+        html += '<div>';
+        html += '<h3 class="font-semibold text-gray-800 text-xs sm:text-sm line-clamp-2 mb-1">' + p.title + '</h3>';
+        html += priceHtml;
+        html += '</div></div></div>';
+      });
+      grid.innerHTML = html;
+    }
+
+    function toggleCartModal(show) {}
+  </script>
 </body>
 </html>
